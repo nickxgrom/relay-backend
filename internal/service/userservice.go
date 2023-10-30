@@ -16,16 +16,13 @@ func NewUserService(s *store.Store) *UserService {
 	}
 }
 
-func (us *UserService) CreateUser() error {
-	err := us.userRepository.Save(&model.User{
-		FirstName: "anon",
-		LastName:  "anon",
-		Email:     "super@puper.org",
-		Password:  "5658",
-	})
+func (us *UserService) CreateUser(u *model.User) error {
+	err := us.userRepository.Save(u)
 	if err != nil {
 		return err
 	}
+
+	u.Sanitize()
 
 	return nil
 }
