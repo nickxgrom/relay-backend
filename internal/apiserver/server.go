@@ -2,15 +2,16 @@ package apiserver
 
 import (
 	"github.com/gorilla/mux"
+	"relay-backend/internal/controller"
 	"relay-backend/internal/store"
 )
 
 type server struct {
 	router *mux.Router
-	store  store.Store
+	store  *store.Store
 }
 
-func newServer(store store.Store) *server {
+func newServer(store *store.Store) *server {
 	s := &server{
 		router: mux.NewRouter(),
 		store:  store,
@@ -22,5 +23,7 @@ func newServer(store store.Store) *server {
 }
 
 func (s *server) configureRouter() {
+	userController := controller.NewUserController(s.store)
 
+	s.router.HandleFunc("/user", userController.HandleFunc)
 }

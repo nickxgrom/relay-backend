@@ -16,7 +16,7 @@ func Start(config *Config) error {
 	store := relayStore.New(db)
 	srv := newServer(store)
 
-	fmt.Printf("Server starting at port %s", config.BindAddress)
+	fmt.Printf("Server starting at port %s\n", config.BindAddress)
 	return http.ListenAndServe(config.BindAddress, srv.router)
 }
 
