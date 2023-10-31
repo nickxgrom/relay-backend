@@ -16,8 +16,8 @@ func NewUserService(s *store.Store) *UserService {
 	}
 }
 
-func (us *UserService) CreateUser(u *model.User) error {
-	err := us.userRepository.Save(u)
+func (s *UserService) CreateUser(u *model.User) error {
+	err := s.userRepository.Save(u)
 	if err != nil {
 		return err
 	}
@@ -25,4 +25,13 @@ func (us *UserService) CreateUser(u *model.User) error {
 	u.Sanitize()
 
 	return nil
+}
+
+func (s *UserService) FindByEmail(email string) (*model.User, error) {
+	u, err := s.userRepository.Find(email)
+	if err != nil {
+		return nil, err
+	}
+
+	return u, nil
 }
