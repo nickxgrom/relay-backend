@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"relay-backend/internal/model"
 	"relay-backend/internal/service"
@@ -36,26 +35,21 @@ func (uc *UserController) HandleFunc() func(w http.ResponseWriter, r *http.Reque
 			return
 		}
 
-		switch r.Method {
-		case "POST":
-			u := &model.User{
-				FirstName:  ud.FirstName,
-				LastName:   ud.LastName,
-				Patronymic: ud.Patronymic,
-				Email:      ud.Email,
-				Password:   ud.Password,
-			}
-
-			err := uc.userService.CreateUser(u)
-
-			if err != nil {
-				Error(w, r, http.StatusBadRequest, err)
-				return
-			}
-
-			Respond(w, r, http.StatusCreated, u)
-		default:
-			Error(w, r, http.StatusMethodNotAllowed, errors.New("method-not-allowed"))
+		u := &model.User{
+			FirstName:  ud.FirstName,
+			LastName:   ud.LastName,
+			Patronymic: ud.Patronymic,
+			Email:      ud.Email,
+			Password:   ud.Password,
 		}
+
+		err := uc.userService.CreateUser(u)
+
+		if err != nil {
+			Error(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		Respond(w, r, http.StatusCreated, u)
 	}
 }
