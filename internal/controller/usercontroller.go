@@ -32,7 +32,7 @@ func (uc *UserController) HandleFunc() func(w http.ResponseWriter, r *http.Reque
 		ud := &userData{}
 
 		if err := json.NewDecoder(r.Body).Decode(ud); err != nil {
-			uc.error(w, r, http.StatusBadRequest, err)
+			Error(w, r, http.StatusBadRequest, err)
 			return
 		}
 
@@ -49,26 +49,13 @@ func (uc *UserController) HandleFunc() func(w http.ResponseWriter, r *http.Reque
 			err := uc.userService.CreateUser(u)
 
 			if err != nil {
-				uc.error(w, r, http.StatusBadRequest, err)
+				Error(w, r, http.StatusBadRequest, err)
 				return
 			}
 
-			uc.respond(w, r, http.StatusCreated, u)
+			Respond(w, r, http.StatusCreated, u)
 		default:
-			uc.error(w, r, http.StatusMethodNotAllowed, errors.New("method-not-allowed"))
+			Error(w, r, http.StatusMethodNotAllowed, errors.New("method-not-allowed"))
 		}
-	}
-}
-
-// TODO: move to package `helpers`
-func (uc *UserController) error(w http.ResponseWriter, r *http.Request, statusCode int, err error) {
-	uc.respond(w, r, statusCode, map[string]string{"error": err.Error()})
-}
-
-// TODO: move to package `helpers`
-func (uc *UserController) respond(w http.ResponseWriter, r *http.Request, statusCode int, data interface{}) {
-	w.WriteHeader(statusCode)
-	if data != nil {
-		json.NewEncoder(w).Encode(data)
 	}
 }
