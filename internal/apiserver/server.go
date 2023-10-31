@@ -24,6 +24,8 @@ func newServer(store *store.Store) *server {
 
 func (s *server) configureRouter() {
 	userController := controller.NewUserController(s.store)
+	sessionController := controller.NewSessionController(s.store)
 
 	s.router.HandleFunc("/users", userController.HandleFunc()).Methods("POST")
+	s.router.HandleFunc("/sessions", sessionController.HandleFunc()).Methods("POST")
 }
