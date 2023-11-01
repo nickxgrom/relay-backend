@@ -3,6 +3,7 @@ package apiserver
 import (
 	"database/sql"
 	"fmt"
+	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
@@ -14,7 +15,8 @@ func Start(config *Config) error {
 	defer db.Close()
 
 	store := relayStore.New(db)
-	srv := newServer(store)
+	sessionStore := sessions.NewCookieStore([]byte(config.SessionKey))
+	srv := newServer(store, sessionStore)
 
 	fmt.Printf("Server starting at port %s\n", config.BindAddress)
 	return http.ListenAndServe(config.BindAddress, srv.router)

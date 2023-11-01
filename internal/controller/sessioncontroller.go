@@ -3,18 +3,25 @@ package controller
 import (
 	"encoding/json"
 	"errors"
+	"github.com/gorilla/sessions"
 	"net/http"
 	"relay-backend/internal/service"
 	"relay-backend/internal/store"
 )
 
+var (
+	sessionName = "auth"
+)
+
 type SessionController struct {
 	sessionService *service.SessionService
+	sessionStore   *sessions.CookieStore
 }
 
-func NewSessionController(s *store.Store) *SessionController {
+func NewSessionController(store *store.Store, sessionStore *sessions.CookieStore) *SessionController {
 	return &SessionController{
-		sessionService: service.NewSessionService(s),
+		sessionService: service.NewSessionService(store, sessionStore),
+		sessionStore:   sessionStore,
 	}
 }
 
@@ -33,10 +40,24 @@ func (c SessionController) HandleFunc() func(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		err := c.sessionService.CreateSession(req.Email, req.Password)
-
+		u, err := c.sessionService.CheckUserExist(req.Email, req.Password)
 		if err != nil {
 			Error(w, r, http.StatusUnauthorized, errors.New("incorrect-email-or-password"))
+			return
+		}
+
+		s, err := c.sessionStore.Get(r, sessionName)
+		if err != nil {
+			Error(w, r, http.StatusInternalServerError, err)
+			return
+		} else {
+
+		}
+
+		s.Values["user_id"] = u.Id
+		err = c.sessionStore.Save(r, w, s)
+		if err != nil {
+			Error(w, r, http.StatusInternalServerError, err)
 			return
 		}
 
