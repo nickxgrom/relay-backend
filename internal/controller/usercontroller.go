@@ -53,3 +53,7 @@ func (uc *UserController) HandleFunc() func(w http.ResponseWriter, r *http.Reque
 		Respond(w, r, http.StatusCreated, u)
 	}
 }
+
+func (uc *UserController) GetUserService() *service.UserService {
+	return uc.userService
+}
