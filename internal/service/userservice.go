@@ -28,7 +28,16 @@ func (s *UserService) CreateUser(u *model.User) error {
 }
 
 func (s *UserService) FindByEmail(email string) (*model.User, error) {
-	u, err := s.userRepository.Find(email)
+	u, err := s.userRepository.FindByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+
+	return u, nil
+}
+
+func (s *UserService) FindById(id int) (*model.User, error) {
+	u, err := s.userRepository.Find(id)
 	if err != nil {
 		return nil, err
 	}

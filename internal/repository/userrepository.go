@@ -37,7 +37,7 @@ func (ur *UserRepository) Save(u *model.User) error {
 	return nil
 }
 
-func (ur *UserRepository) Find(email string) (*model.User, error) {
+func (ur *UserRepository) FindByEmail(email string) (*model.User, error) {
 	u := &model.User{}
 
 	if err := ur.store.Db.QueryRow(
@@ -51,7 +51,31 @@ func (ur *UserRepository) Find(email string) (*model.User, error) {
 		&u.Email,
 		&u.EncryptedPassword,
 	); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("user-not-found")
+		}
+
+		return nil, err
+	}
+
+	return u, nil
+}
+
+func (ur *UserRepository) Find(id int) (*model.User, error) {
+	u := &model.User{}
+
+	if err := ur.store.Db.QueryRow(
+		"select id, first_name, last_name, patronymic, email, encrypted_password from users where id = $1",
+		id,
+	).Scan(
+		&u.Id,
+		&u.FirstName,
+		&u.LastName,
+		&u.Patronymic,
+		&u.Email,
+		&u.EncryptedPassword,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.New("user-not-found")
 		}
 
