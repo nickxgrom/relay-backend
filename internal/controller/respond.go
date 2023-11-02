@@ -11,6 +11,7 @@ func Error(w http.ResponseWriter, r *http.Request, statusCode int, err error) {
 }
 
 func Respond(w http.ResponseWriter, r *http.Request, statusCode int, data interface{}) {
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	if data != nil {
 		json.NewEncoder(w).Encode(data)
