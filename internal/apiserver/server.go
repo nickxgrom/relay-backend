@@ -5,7 +5,6 @@ import (
 	"github.com/gorilla/sessions"
 	"net/http"
 	"relay-backend/internal/controller"
-	"relay-backend/internal/model"
 	"relay-backend/internal/store"
 )
 
@@ -32,17 +31,14 @@ func newServer(store *store.Store, sessionStore *sessions.CookieStore) *server {
 }
 
 func (s *server) configureRouter() {
-	userController := controller.NewUserController(s.store)
 	sessionController := controller.NewSessionController(s.store, s.sessionStore)
 
-	s.router.HandleFunc("/users", userController.HandleFunc()).Methods("POST")
-	s.router.HandleFunc("/sessions", sessionController.HandleFunc()).Methods("POST")
+	s.router.HandleFunc("/users", controller.UserHandleFunc(s.store)).Methods(http.MethodPost)
+	s.router.HandleFunc("/sessions", sessionController.HandleFunc()).Methods(http.MethodPost)
 
-	privateTest := s.router.PathPrefix("/private").Subrouter()
-	privateTest.Use(controller.AuthenticateUser(s.sessionStore, userController.GetUserService(), sessionName))
-	privateTest.HandleFunc("/whoami", s.whoami).Methods("GET")
-}
+	authMiddleware := controller.ConfigureMiddleware(s.sessionStore, sessionName)
 
-func (s *server) whoami(w http.ResponseWriter, r *http.Request) {
-	controller.Respond(w, r, http.StatusOK, r.Context().Value(controller.CtxKeyUser).(*model.User))
+	privateUserRoute := s.router.PathPrefix("").Subrouter()
+	privateUserRoute.Use(authMiddleware.AuthenticateUser)
+	privateUserRoute.HandleFunc("/users", controller.UserHandleFunc(s.store)).Methods(http.MethodGet)
 }
