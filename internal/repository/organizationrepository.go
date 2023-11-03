@@ -17,13 +17,13 @@ func NewOrganizationRepository(s *store.Store) *OrganizationRepository {
 
 func (or *OrganizationRepository) Save(organization *model.Organization) error {
 	if err := or.store.Db.QueryRow(
-		"insert into organizations (owner_id, name, description, address, email) values ((select id from users where id=$1), $2, $3, $4, $5) on conflict (owner_id, name) do nothing returning id",
+		"insert into organizations (owner_id, name, description, address, email, creation_date) values ((select id from users where id=$1), $2, $3, $4, $5, current_date) on conflict (owner_id, name) do nothing returning id, creation_date",
 		&organization.OwnerId,
 		&organization.Name,
 		&organization.Description,
 		&organization.Address,
 		&organization.Email,
-	).Scan(&organization.Id); err != nil {
+	).Scan(&organization.Id, &organization.CreationDate); err != nil {
 		return err
 	}
 
