@@ -2,6 +2,8 @@ package controller
 
 import (
 	"encoding/json"
+	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/sessions"
 	"net/http"
 	"relay-backend/internal/model"
 	"relay-backend/internal/service"
@@ -24,20 +26,18 @@ var (
 	uc *UserController
 )
 
-func UserHandleFunc(s *store.Store) func(w http.ResponseWriter, r *http.Request) {
+func NewUserController(s *store.Store, sessionStore *sessions.CookieStore) func(r chi.Router) {
 	if uc == nil {
 		uc = &UserController{
 			userService: service.NewUserService(s),
 		}
 	}
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			uc.GetUser(w, r)
-		case http.MethodPost:
-			uc.CreatUser(w, r)
-		}
+	am := ConfigureMiddleware(sessionStore, "auth")
+
+	return func(r chi.Router) {
+		r.Post("/", uc.CreateUser)
+		r.With(am.AuthenticateUser).Get("/", uc.GetUser)
 	}
 }
 
@@ -52,7 +52,7 @@ func (uc *UserController) GetUser(w http.ResponseWriter, r *http.Request) {
 	Respond(w, r, http.StatusOK, user)
 }
 
-func (uc *UserController) CreatUser(w http.ResponseWriter, r *http.Request) {
+func (uc *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 	ud := &userData{}
 
 	if err := json.NewDecoder(r.Body).Decode(ud); err != nil {

@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"github.com/gorilla/sessions"
 	"relay-backend/internal/model"
 	"relay-backend/internal/repository"
 	"relay-backend/internal/store"
@@ -11,14 +10,12 @@ import (
 type SessionService struct {
 	sessionRepository *repository.SessionRepository
 	userService       *UserService
-	sessionStore      *sessions.CookieStore
 }
 
-func NewSessionService(s *store.Store, sessionStore *sessions.CookieStore) *SessionService {
+func NewSessionService(s *store.Store) *SessionService {
 	return &SessionService{
 		sessionRepository: repository.NewSessionRepository(s),
 		userService:       NewUserService(s),
-		sessionStore:      sessionStore,
 	}
 }
 

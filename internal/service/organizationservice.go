@@ -25,8 +25,13 @@ func (os *OrganizationService) CreateOrganization(organization *model.Organizati
 	return nil
 }
 
-func (os *OrganizationService) GetOrganization() (*model.Organization, error) {
-	return nil, nil
+func (os *OrganizationService) GetOrganization(userId int, orgId int) (*model.Organization, error) {
+	org, err := os.organizationRepository.Find(userId, orgId)
+	if err != nil {
+		return nil, err
+	}
+
+	return org, nil
 }
 
 func (os *OrganizationService) CreateOrganizationList() ([]*model.Organization, error) {

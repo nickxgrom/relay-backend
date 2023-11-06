@@ -2,6 +2,9 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/sessions"
 	"net/http"
 	"relay-backend/internal/model"
 	"relay-backend/internal/service"
@@ -23,37 +26,23 @@ var (
 	oc *OrganizationController
 )
 
-func OrganizationHandleFunc(s *store.Store) func(w http.ResponseWriter, r *http.Request) {
+func NewOrganizationController(s *store.Store, sessionStore *sessions.CookieStore) func(r chi.Router) {
 	if oc == nil {
 		oc = &OrganizationController{
 			organizationService: service.NewOrganizationService(s),
 		}
 	}
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			oc.createOrganization(w, r)
-		case http.MethodGet:
-		case http.MethodPut:
-		case http.MethodDelete:
+	am := ConfigureMiddleware(sessionStore, "auth")
 
-		}
+	return func(r chi.Router) {
+		r.With(am.AuthenticateUser).Post("/", oc.CreateOrganization)
 	}
 }
 
-func OrganizationListHandleFunc(s *store.Store) func(w http.ResponseWriter, r *http.Request) {
-	if oc == nil {
-		oc = &OrganizationController{
-			organizationService: service.NewOrganizationService(s),
-		}
-	}
+func (oc *OrganizationController) CreateOrganization(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(CtxKeyUser).(int)
 
-	return func(w http.ResponseWriter, r *http.Request) {
-	}
-}
-
-func (oc *OrganizationController) createOrganization(w http.ResponseWriter, r *http.Request) {
 	orgData := &organizationData{}
 
 	if err := json.NewDecoder(r.Body).Decode(orgData); err != nil {
@@ -62,7 +51,7 @@ func (oc *OrganizationController) createOrganization(w http.ResponseWriter, r *h
 	}
 
 	organization := &model.Organization{
-		OwnerId:     r.Context().Value(CtxKeyUser).(int),
+		OwnerId:     userId,
 		Name:        orgData.Name,
 		Description: orgData.Description,
 		Address:     orgData.Address,
@@ -76,4 +65,15 @@ func (oc *OrganizationController) createOrganization(w http.ResponseWriter, r *h
 	}
 
 	Respond(w, r, http.StatusCreated, organization)
+}
+
+func (oc *OrganizationController) findOrganization(w http.ResponseWriter, r *http.Request, userId int, orgId string) {
+	//org, err := oc.organizationService.GetOrganization(userId, orgId)
+	//if err != nil {
+	//	Error(w, r, http.StatusNotFound, err)
+	//	return
+	//}
+	fmt.Println(orgId)
+
+	Respond(w, r, http.StatusOK, nil)
 }

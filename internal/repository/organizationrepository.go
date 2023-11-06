@@ -30,8 +30,23 @@ func (or *OrganizationRepository) Save(organization *model.Organization) error {
 	return nil
 }
 
-func (or *OrganizationRepository) Find() (*model.Organization, error) {
-	return nil, nil
+// select users.* from users join employees on users.id = employees.user_id where employees.organization_id = $1
+func (or *OrganizationRepository) Find(userId int, orgId int) (*model.Organization, error) {
+	org := &model.Organization{}
+
+	if err := or.store.Db.QueryRow("select * from organizations where id = $1 and owner_id = $2", orgId, userId).Scan(
+		&org.Id,
+		&org.OwnerId,
+		&org.Name,
+		&org.Description,
+		&org.Address,
+		&org.Email,
+		&org.CreationDate,
+	); err != nil {
+		return nil, err
+	}
+
+	return org, nil
 }
 func (or *OrganizationRepository) GetList() ([]*model.Organization, error) {
 	return nil, nil
