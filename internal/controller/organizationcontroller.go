@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 	"relay-backend/internal/model"
@@ -36,6 +37,7 @@ func NewOrganizationController(s *store.Store, middleware *AuthMiddleware) func(
 		r.Use(middleware.AuthenticateUser)
 		r.Post("/", oc.CreateOrganization)
 		r.Get("/{orgId}", oc.findOrganization)
+		r.Get("/{page}/{pageSize}", oc.getOrganizationList)
 	}
 }
 
@@ -82,4 +84,35 @@ func (oc *OrganizationController) findOrganization(w http.ResponseWriter, r *htt
 	}
 
 	Respond(w, r, http.StatusOK, org)
+}
+
+func (oc *OrganizationController) getOrganizationList(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(CtxKeyUser).(int)
+
+	//TODO: consider move to method
+	page, err := strconv.Atoi(chi.URLParam(r, "page"))
+	if err != nil {
+		Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	pageSize, err := strconv.Atoi(chi.URLParam(r, "pageSize"))
+	if err != nil {
+		Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	if pageSize == 0 {
+		Error(w, r, http.StatusBadRequest, errors.New("page-size-must-be-greater-than-zero"))
+		return
+	}
+
+	orgList, err := oc.organizationService.GetOrganizationList(userId, page, pageSize)
+
+	if err != nil {
+		Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	Respond(w, r, http.StatusOK, orgList)
 }

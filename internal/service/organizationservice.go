@@ -34,8 +34,13 @@ func (os *OrganizationService) GetOrganization(userId int, orgId int) (*model.Or
 	return org, nil
 }
 
-func (os *OrganizationService) CreateOrganizationList() ([]*model.Organization, error) {
-	return nil, nil
+func (os *OrganizationService) GetOrganizationList(userId int, page int, pageSize int) ([]model.Organization, error) {
+	orgList, err := os.organizationRepository.GetList(userId, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	return orgList, nil
 }
 
 func (os *OrganizationService) UpdateOrganization() (*model.Organization, error) {

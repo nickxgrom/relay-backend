@@ -48,8 +48,38 @@ func (or *OrganizationRepository) Find(userId int, orgId int) (*model.Organizati
 
 	return org, nil
 }
-func (or *OrganizationRepository) GetList() ([]*model.Organization, error) {
-	return nil, nil
+func (or *OrganizationRepository) GetList(userId int, page int, pageSize int) ([]model.Organization, error) {
+	orgList := make([]model.Organization, 0)
+
+	rows, err := or.store.Db.Query("select * from organizations where owner_id = $1 order by id desc limit $2 offset $3",
+		userId,
+		pageSize,
+		(page-1)*pageSize,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		org := &model.Organization{}
+
+		if err := rows.Scan(
+			&org.Id,
+			&org.OwnerId,
+			&org.Name,
+			&org.Description,
+			&org.Address,
+			&org.Email,
+			&org.CreationDate,
+		); err != nil {
+			return nil, err
+		}
+
+		orgList = append(orgList, *org)
+	}
+
+	return orgList, nil
 }
 
 func (or *OrganizationRepository) Update() error {
