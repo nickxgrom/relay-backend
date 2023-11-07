@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/sessions"
 	"net/http"
 	"relay-backend/internal/model"
 	"relay-backend/internal/service"
@@ -26,18 +25,16 @@ var (
 	uc *UserController
 )
 
-func NewUserController(s *store.Store, sessionStore *sessions.CookieStore) func(r chi.Router) {
+func NewUserController(store *store.Store, middleware *AuthMiddleware) func(r chi.Router) {
 	if uc == nil {
 		uc = &UserController{
-			userService: service.NewUserService(s),
+			userService: service.NewUserService(store),
 		}
 	}
 
-	am := ConfigureMiddleware(sessionStore, "auth")
-
 	return func(r chi.Router) {
 		r.Post("/", uc.CreateUser)
-		r.With(am.AuthenticateUser).Get("/", uc.GetUser)
+		r.With(middleware.AuthenticateUser).Get("/", uc.GetUser)
 	}
 }
 

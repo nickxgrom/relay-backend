@@ -30,10 +30,11 @@ func newServer(store *store.Store, sessionStore *sessions.CookieStore) *server {
 }
 
 func (s *server) configureRouter() {
+	authMiddleware := controller.ConfigureMiddleware(s.sessionStore, sessionName)
 
-	s.router.Route("/users", controller.NewUserController(s.store, s.sessionStore))
+	s.router.Route("/users", controller.NewUserController(s.store, authMiddleware))
 	s.router.Route("/sessions", controller.NewSessionController(s.store, s.sessionStore))
-	s.router.Route("/organizations", controller.NewOrganizationController(s.store, s.sessionStore))
+	s.router.Route("/organizations", controller.NewOrganizationController(s.store, authMiddleware))
 
 	//authMiddleware := controller.ConfigureMiddleware(s.sessionStore, sessionName)
 	//

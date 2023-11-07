@@ -2,13 +2,12 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/sessions"
 	"net/http"
 	"relay-backend/internal/model"
 	"relay-backend/internal/service"
 	"relay-backend/internal/store"
+	"strconv"
 )
 
 type OrganizationController struct {
@@ -26,17 +25,17 @@ var (
 	oc *OrganizationController
 )
 
-func NewOrganizationController(s *store.Store, sessionStore *sessions.CookieStore) func(r chi.Router) {
+func NewOrganizationController(s *store.Store, middleware *AuthMiddleware) func(r chi.Router) {
 	if oc == nil {
 		oc = &OrganizationController{
 			organizationService: service.NewOrganizationService(s),
 		}
 	}
 
-	am := ConfigureMiddleware(sessionStore, "auth")
-
 	return func(r chi.Router) {
-		r.With(am.AuthenticateUser).Post("/", oc.CreateOrganization)
+		r.Use(middleware.AuthenticateUser)
+		r.Post("/", oc.CreateOrganization)
+		r.Get("/{orgId}", oc.findOrganization)
 	}
 }
 
@@ -67,13 +66,20 @@ func (oc *OrganizationController) CreateOrganization(w http.ResponseWriter, r *h
 	Respond(w, r, http.StatusCreated, organization)
 }
 
-func (oc *OrganizationController) findOrganization(w http.ResponseWriter, r *http.Request, userId int, orgId string) {
-	//org, err := oc.organizationService.GetOrganization(userId, orgId)
-	//if err != nil {
-	//	Error(w, r, http.StatusNotFound, err)
-	//	return
-	//}
-	fmt.Println(orgId)
+func (oc *OrganizationController) findOrganization(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(CtxKeyUser).(int)
+	orgId, err := strconv.Atoi(chi.URLParam(r, "orgId"))
 
-	Respond(w, r, http.StatusOK, nil)
+	if err != nil {
+		Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	org, err := oc.organizationService.GetOrganization(userId, orgId)
+	if err != nil {
+		Error(w, r, http.StatusNotFound, err)
+		return
+	}
+
+	Respond(w, r, http.StatusOK, org)
 }

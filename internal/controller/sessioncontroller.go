@@ -12,6 +12,7 @@ import (
 
 var (
 	sessionName = "auth"
+	c           *SessionController
 )
 
 type SessionController struct {
@@ -19,21 +20,17 @@ type SessionController struct {
 	sessionStore   *sessions.CookieStore
 }
 
-//func NewSessionController(store *store.Store, sessionStore *sessions.CookieStore) *SessionController {
-//	return &SessionController{
-//		sessionService: service.NewSessionService(store, sessionStore),
-//		sessionStore:   sessionStore,
-//	}
-//}
-
 func NewSessionController(s *store.Store, sessionStore *sessions.CookieStore) func(r chi.Router) {
+	if c == nil {
+		c = &SessionController{
+			sessionService: service.NewSessionService(s),
+			sessionStore:   sessionStore,
+		}
+	}
+
 	type session struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
-	}
-	c := SessionController{
-		sessionService: service.NewSessionService(s),
-		sessionStore:   sessionStore,
 	}
 
 	return func(router chi.Router) {
