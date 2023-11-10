@@ -89,3 +89,30 @@ func (or *OrganizationRepository) Update() error {
 func (or *OrganizationRepository) Delete() error {
 	return nil
 }
+
+func (or *OrganizationRepository) AddEmployees(userId int, orgId int, employeeIds []int) error {
+	_, err := or.Find(userId, orgId)
+	if err != nil {
+		return err
+	}
+
+	tx, err := or.store.Db.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, id := range employeeIds {
+		_, err := tx.Exec("insert into employees (organization_id, user_id) values ($1, $2)", orgId, id)
+
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -38,6 +38,8 @@ func NewOrganizationController(s *store.Store, middleware *AuthMiddleware) func(
 		r.Post("/", oc.CreateOrganization)
 		r.Get("/{orgId}", oc.findOrganization)
 		r.Get("/{page}/{pageSize}", oc.getOrganizationList)
+
+		r.Post("/employees", oc.addEmployees)
 	}
 }
 
@@ -115,4 +117,18 @@ func (oc *OrganizationController) getOrganizationList(w http.ResponseWriter, r *
 	}
 
 	Respond(w, r, http.StatusOK, orgList)
+}
+
+func (oc *OrganizationController) addEmployees(w http.ResponseWriter, r *http.Request) {
+	//userId := r.Context().Value(CtxKeyUser).(int)
+
+	var employeeIds *[]int
+
+	if err := json.NewDecoder(r.Body).Decode(&employeeIds); err != nil {
+		Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	Respond(w, r, http.StatusOK, employeeIds)
+
 }
