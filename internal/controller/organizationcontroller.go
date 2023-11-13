@@ -39,7 +39,7 @@ func NewOrganizationController(s *store.Store, middleware *AuthMiddleware) func(
 		r.Get("/{orgId}", oc.findOrganization)
 		r.Get("/{page}/{pageSize}", oc.getOrganizationList)
 
-		r.Post("/employees", oc.addEmployees)
+		r.Post("/{orgId}/employees", oc.addEmployees)
 	}
 }
 
@@ -120,7 +120,12 @@ func (oc *OrganizationController) getOrganizationList(w http.ResponseWriter, r *
 }
 
 func (oc *OrganizationController) addEmployees(w http.ResponseWriter, r *http.Request) {
-	//userId := r.Context().Value(CtxKeyUser).(int)
+	userId := r.Context().Value(CtxKeyUser).(int)
+	orgId, err := strconv.Atoi(chi.URLParam(r, "orgId"))
+	if err != nil {
+		Error(w, r, http.StatusBadRequest, err)
+		return
+	}
 
 	var employeeIds *[]int
 
@@ -129,6 +134,11 @@ func (oc *OrganizationController) addEmployees(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	Respond(w, r, http.StatusOK, employeeIds)
+	err = oc.organizationService.AddOrganizationEmployees(userId, orgId, *employeeIds)
+	if err != nil {
+		Error(w, r, http.StatusInternalServerError, err)
+		return
+	}
 
+	Respond(w, r, http.StatusOK, nil)
 }

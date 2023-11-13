@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"relay-backend/internal/model"
 	"relay-backend/internal/store"
 )
@@ -30,7 +31,6 @@ func (or *OrganizationRepository) Save(organization *model.Organization) error {
 	return nil
 }
 
-// select users.* from users join employees on users.id = employees.user_id where employees.organization_id = $1
 func (or *OrganizationRepository) Find(userId int, orgId int) (*model.Organization, error) {
 	org := &model.Organization{}
 
@@ -45,6 +45,34 @@ func (or *OrganizationRepository) Find(userId int, orgId int) (*model.Organizati
 	); err != nil {
 		return nil, err
 	}
+
+	rows, err := or.store.Db.Query(
+		"select id, first_name, last_name, patronymic, email from users join employees on users.id = employees.user_id where employees.organization_id = $1",
+		orgId,
+	)
+	employeesList := make([]model.User, 0)
+
+	for rows.Next() {
+		empl := &model.User{}
+
+		if err := rows.Scan(
+			&empl.Id,
+			&empl.FirstName,
+			&empl.LastName,
+			&empl.Patronymic,
+			&empl.Email,
+		); err != nil {
+			return nil, err
+		}
+
+		employeesList = append(employeesList, *empl)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	org.Employees = employeesList
 
 	return org, nil
 }
@@ -93,7 +121,7 @@ func (or *OrganizationRepository) Delete() error {
 func (or *OrganizationRepository) AddEmployees(userId int, orgId int, employeeIds []int) error {
 	_, err := or.Find(userId, orgId)
 	if err != nil {
-		return err
+		return errors.New("organization-not-found")
 	}
 
 	tx, err := or.store.Db.Begin()
@@ -102,6 +130,10 @@ func (or *OrganizationRepository) AddEmployees(userId int, orgId int, employeeId
 	}
 
 	for _, id := range employeeIds {
+		if id == userId {
+			continue
+		}
+
 		_, err := tx.Exec("insert into employees (organization_id, user_id) values ($1, $2)", orgId, id)
 
 		if err != nil {
