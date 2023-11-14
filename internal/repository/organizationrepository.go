@@ -110,7 +110,33 @@ func (or *OrganizationRepository) GetList(userId int, page int, pageSize int) ([
 	return orgList, nil
 }
 
-func (or *OrganizationRepository) Update() error {
+func (or *OrganizationRepository) Update(userId int, orgId int, organization *model.Organization) error {
+
+	err := or.store.Db.QueryRow(`
+			update organizations 
+			set coalesce($1, name), 
+				coalesce($2, description),
+				coalesce($3, address), 
+				coalesce($4, email) 
+			where owner_id = $5 and id = $6
+			returning id, owner_id, creation_date
+		`,
+		&organization.Name,
+		&organization.Description,
+		&organization.Address,
+		&organization.Email,
+		userId,
+		orgId,
+	).Scan(
+		&organization.Id,
+		&organization.OwnerId,
+		&organization.CreationDate,
+	)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

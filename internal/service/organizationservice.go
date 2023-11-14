@@ -43,8 +43,13 @@ func (os *OrganizationService) GetOrganizationList(userId int, page int, pageSiz
 	return orgList, nil
 }
 
-func (os *OrganizationService) UpdateOrganization() (*model.Organization, error) {
-	return nil, nil
+func (os *OrganizationService) UpdateOrganization(ownerId int, orgId int, organization *model.Organization) error {
+	err := os.organizationRepository.Update(ownerId, orgId, organization)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (os *OrganizationService) DeleteOrganization() (*model.Organization, error) {

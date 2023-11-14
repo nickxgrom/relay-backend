@@ -38,6 +38,7 @@ func NewOrganizationController(s *store.Store, middleware *AuthMiddleware) func(
 		r.Post("/", oc.CreateOrganization)
 		r.Get("/{orgId}", oc.findOrganization)
 		r.Get("/{page}/{pageSize}", oc.getOrganizationList)
+		r.Put("/{orgId}", oc.updateOrganization)
 
 		r.Post("/{orgId}/employees", oc.addEmployees)
 	}
@@ -91,7 +92,6 @@ func (oc *OrganizationController) findOrganization(w http.ResponseWriter, r *htt
 func (oc *OrganizationController) getOrganizationList(w http.ResponseWriter, r *http.Request) {
 	userId := r.Context().Value(CtxKeyUser).(int)
 
-	//TODO: consider move to method
 	page, err := strconv.Atoi(chi.URLParam(r, "page"))
 	if err != nil {
 		Error(w, r, http.StatusBadRequest, err)
@@ -117,6 +117,37 @@ func (oc *OrganizationController) getOrganizationList(w http.ResponseWriter, r *
 	}
 
 	Respond(w, r, http.StatusOK, orgList)
+}
+
+func (oc *OrganizationController) updateOrganization(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(CtxKeyUser).(int)
+
+	orgId, err := strconv.Atoi(chi.URLParam(r, "orgId"))
+	if err != nil {
+		Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	orgData := &organizationData{}
+	if err := json.NewDecoder(r.Body).Decode(&orgData); err != nil {
+		Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	organization := &model.Organization{
+		Name:        orgData.Name,
+		Description: orgData.Description,
+		Address:     orgData.Address,
+		Email:       orgData.Email,
+	}
+
+	err = oc.organizationService.UpdateOrganization(userId, orgId, organization)
+	if err != nil {
+		Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	Respond(w, r, http.StatusOK, organization)
 }
 
 func (oc *OrganizationController) addEmployees(w http.ResponseWriter, r *http.Request) {
