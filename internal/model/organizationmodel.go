@@ -8,5 +8,5 @@ type Organization struct {
 	Address      string `json:"address"`
 	Email        string `json:"email"`
 	CreationDate string `json:"creationDate"`
-	Employees    []User `json:"employees"`
+	Employees    []User `json:"employees,omitempty"`
 }
