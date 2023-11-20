@@ -52,8 +52,13 @@ func (os *OrganizationService) UpdateOrganization(ownerId int, orgId int, organi
 	return nil
 }
 
-func (os *OrganizationService) DeleteOrganization() (*model.Organization, error) {
-	return nil, nil
+func (os *OrganizationService) DeleteOrganization(ownerId int, orgId int) error {
+	err := os.organizationRepository.Delete(ownerId, orgId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (os *OrganizationService) AddOrganizationEmployees(userId int, orgId int, employeeIds []int) error {

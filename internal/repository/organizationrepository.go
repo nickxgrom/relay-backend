@@ -2,8 +2,10 @@ package repository
 
 import (
 	"errors"
+	"net/http"
 	"relay-backend/internal/model"
 	"relay-backend/internal/store"
+	"relay-backend/internal/utils"
 )
 
 type OrganizationRepository struct {
@@ -143,7 +145,21 @@ func (or *OrganizationRepository) Update(userId int, orgId int, organization *mo
 	return nil
 }
 
-func (or *OrganizationRepository) Delete() error {
+func (or *OrganizationRepository) Delete(ownerId int, orgId int) error {
+	res, err := or.store.Db.Exec(`delete from organizations where owner_id = $1 and id = $2`, ownerId, orgId)
+	if err != nil {
+		return utils.NewException(http.StatusInternalServerError, utils.InternalServerError)
+	}
+
+	count, err := res.RowsAffected()
+	if err != nil {
+		return utils.NewException(http.StatusInternalServerError, utils.InternalServerError)
+	}
+
+	if count == 0 {
+		return utils.NewException(http.StatusNotFound, utils.NotFound)
+	}
+
 	return nil
 }
 

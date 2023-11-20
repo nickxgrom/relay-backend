@@ -8,6 +8,7 @@ import (
 	"relay-backend/internal/model"
 	"relay-backend/internal/service"
 	"relay-backend/internal/store"
+	"relay-backend/internal/utils"
 	"strconv"
 )
 
@@ -39,6 +40,7 @@ func NewOrganizationController(s *store.Store, middleware *AuthMiddleware) func(
 		r.Get("/{orgId}", oc.findOrganization)
 		r.Get("/{page}/{pageSize}", oc.getOrganizationList)
 		r.Put("/{orgId}", oc.updateOrganization)
+		r.Delete("/{orgId}", oc.deleteOrganization)
 
 		r.Post("/{orgId}/employees", oc.addEmployees)
 	}
@@ -148,6 +150,23 @@ func (oc *OrganizationController) updateOrganization(w http.ResponseWriter, r *h
 	}
 
 	Respond(w, r, http.StatusOK, organization)
+}
+
+func (oc *OrganizationController) deleteOrganization(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(CtxKeyUser).(int)
+	orgId, err := strconv.Atoi(chi.URLParam(r, "orgId"))
+	if err != nil {
+		HTTPError(w, r, utils.NewException(http.StatusBadRequest, utils.BadRequest))
+		return
+	}
+
+	err = oc.organizationService.DeleteOrganization(userId, orgId)
+	if err != nil {
+		HTTPError(w, r, err)
+		return
+	}
+
+	Respond(w, r, http.StatusOK, nil)
 }
 
 func (oc *OrganizationController) addEmployees(w http.ResponseWriter, r *http.Request) {
