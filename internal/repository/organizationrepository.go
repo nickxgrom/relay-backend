@@ -193,3 +193,17 @@ func (or *OrganizationRepository) AddEmployees(userId int, orgId int, employeeId
 
 	return nil
 }
+
+func (or *OrganizationRepository) DeleteAllEmployees(ownerId int, orgId int) error {
+	_, err := or.Find(ownerId, orgId)
+	if err != nil {
+		return utils.NewException(http.StatusNotFound, utils.NotFound)
+	}
+
+	_, err = or.store.Db.Exec(`delete from employees where organization_id = $1`, orgId)
+	if err != nil {
+		return utils.NewException(http.StatusInternalServerError, utils.InternalServerError)
+	}
+
+	return nil
+}

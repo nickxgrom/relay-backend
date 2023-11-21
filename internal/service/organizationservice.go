@@ -53,8 +53,11 @@ func (os *OrganizationService) UpdateOrganization(ownerId int, orgId int, organi
 }
 
 func (os *OrganizationService) DeleteOrganization(ownerId int, orgId int) error {
-	err := os.organizationRepository.Delete(ownerId, orgId)
-	if err != nil {
+	if err := os.organizationRepository.DeleteAllEmployees(ownerId, orgId); err != nil {
+		return err
+	}
+
+	if err := os.organizationRepository.Delete(ownerId, orgId); err != nil {
 		return err
 	}
 
