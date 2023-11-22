@@ -163,7 +163,7 @@ func (or *OrganizationRepository) Delete(ownerId int, orgId int) error {
 	return nil
 }
 
-func (or *OrganizationRepository) AddEmployees(userId int, orgId int, employeeIds []int) error {
+func (or *OrganizationRepository) AddEmployees(userId int, orgId int, employees []model.Employee) error {
 	_, err := or.Find(userId, orgId)
 	if err != nil {
 		return errors.New("organization-not-found")
@@ -174,12 +174,12 @@ func (or *OrganizationRepository) AddEmployees(userId int, orgId int, employeeId
 		return err
 	}
 
-	for _, id := range employeeIds {
-		if id == userId {
+	for _, employee := range employees {
+		if employee.Id == userId {
 			continue
 		}
 
-		_, err := tx.Exec("insert into employees (organization_id, user_id) values ($1, $2)", orgId, id)
+		_, err := tx.Exec("insert into employees (organization_id, user_id, user_role) values ($1, $2, $3)", orgId, employee.Id, employee.UserRole)
 
 		if err != nil {
 			tx.Rollback()

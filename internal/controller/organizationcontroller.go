@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 	"relay-backend/internal/model"
@@ -177,14 +178,16 @@ func (oc *OrganizationController) addEmployees(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	var employeeIds *[]int
+	employees := &[]model.Employee{}
 
-	if err := json.NewDecoder(r.Body).Decode(&employeeIds); err != nil {
-		Error(w, r, http.StatusBadRequest, err)
+	if err := json.NewDecoder(r.Body).Decode(&employees); err != nil {
+		HTTPError(w, r, utils.NewException(http.StatusInternalServerError, utils.InternalServerError))
 		return
 	}
 
-	err = oc.organizationService.AddOrganizationEmployees(userId, orgId, *employeeIds)
+	fmt.Println(employees)
+
+	err = oc.organizationService.AddOrganizationEmployees(userId, orgId, *employees)
 	if err != nil {
 		Error(w, r, http.StatusInternalServerError, err)
 		return
