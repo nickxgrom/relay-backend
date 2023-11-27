@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"net/http"
+	"relay-backend/internal/enums"
 	"relay-backend/internal/model"
 	"relay-backend/internal/service"
 	"relay-backend/internal/store"
@@ -34,7 +35,7 @@ func NewUserController(store *store.Store, middleware *AuthMiddleware) func(r ch
 
 	return func(r chi.Router) {
 		r.Post("/", uc.CreateUser)
-		r.With(middleware.AuthenticateUser).Get("/", uc.GetUser)
+		r.With(middleware.AuthenticateUser([]enums.UserRole{enums.Any})).Get("/", uc.GetUser)
 	}
 }
 

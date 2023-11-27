@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"net/http"
+	"relay-backend/internal/enums"
 	"relay-backend/internal/model"
 	"relay-backend/internal/service"
 	"relay-backend/internal/store"
@@ -36,14 +37,14 @@ func NewOrganizationController(s *store.Store, middleware *AuthMiddleware) func(
 	}
 
 	return func(r chi.Router) {
-		r.Use(middleware.AuthenticateUser)
-		r.Post("/", oc.CreateOrganization)
-		r.Get("/{orgId}", oc.findOrganization)
-		r.Get("/{page}/{pageSize}", oc.getOrganizationList)
-		r.Put("/{orgId}", oc.updateOrganization)
-		r.Delete("/{orgId}", oc.deleteOrganization)
+		//TODO: consider about role permissions
+		r.With(middleware.AuthenticateUser([]enums.UserRole{enums.Any})).Post("/", oc.CreateOrganization)
+		r.With(middleware.AuthenticateUser([]enums.UserRole{enums.OrganizationOwner, enums.OrganizationAdmin})).Get("/{orgId}", oc.findOrganization)
+		r.With(middleware.AuthenticateUser([]enums.UserRole{enums.Any})).Get("/{page}/{pageSize}", oc.getOrganizationList)
+		r.With(middleware.AuthenticateUser([]enums.UserRole{enums.OrganizationOwner})).Put("/{orgId}", oc.updateOrganization)
+		r.With(middleware.AuthenticateUser([]enums.UserRole{enums.OrganizationOwner})).Delete("/{orgId}", oc.deleteOrganization)
 
-		r.Post("/{orgId}/employees", oc.addEmployees)
+		r.With(middleware.AuthenticateUser([]enums.UserRole{enums.OrganizationOwner, enums.OrganizationAdmin})).Post("/{orgId}/employees", oc.addEmployees)
 	}
 }
 

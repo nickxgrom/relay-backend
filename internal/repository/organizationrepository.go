@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"net/http"
+	"relay-backend/internal/enums"
 	"relay-backend/internal/model"
 	"relay-backend/internal/store"
 	"relay-backend/internal/utils"
@@ -206,4 +207,26 @@ func (or *OrganizationRepository) DeleteAllEmployees(ownerId int, orgId int) err
 	}
 
 	return nil
+}
+
+func (or *OrganizationRepository) GetUserRole(userId int, orgId int) enums.UserRole {
+	var userRole int
+
+	if _, err := or.Find(userId, orgId); err == nil {
+		return enums.OrganizationOwner
+	}
+
+	err := or.store.Db.QueryRow(
+		`select user_role from employees where user_id = $1 and organization_id = $2`,
+		userId,
+		orgId,
+	).Scan(
+		userRole,
+	)
+
+	if err != nil {
+		return enums.None
+	}
+
+	return enums.UserRole(userRole)
 }

@@ -4,6 +4,8 @@ const (
 	NotFound            string = "not-found"
 	InternalServerError        = "internal-server-error"
 	BadRequest                 = "bad-request"
+	Forbidden                  = "resource-forbidden"
+	Unauthorized               = "unauthorized"
 )
 
 type Exception struct {

@@ -3,7 +3,9 @@ package enums
 type UserRole byte
 
 const (
-	OrganizationOwner UserRole = 0
-	OrganizationAdmin          = 1
-	Operator                   = 2
+	None              UserRole = 0
+	OrganizationOwner          = 1
+	OrganizationAdmin          = 2
+	Operator                   = 3
+	Any                        = 5
 )
