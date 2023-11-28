@@ -213,7 +213,7 @@ func (or *OrganizationRepository) GetUserRole(userId int, orgId int) enums.UserR
 	var userRole int
 
 	if _, err := or.Find(userId, orgId); err == nil {
-		return enums.OrganizationOwner
+		return enums.UserRoleEnum.OrganizationOwner
 	}
 
 	err := or.store.Db.QueryRow(
@@ -225,7 +225,7 @@ func (or *OrganizationRepository) GetUserRole(userId int, orgId int) enums.UserR
 	)
 
 	if err != nil {
-		return enums.None
+		return enums.UserRoleEnum.None
 	}
 
 	return enums.UserRole(userRole)

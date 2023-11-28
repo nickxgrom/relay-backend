@@ -34,7 +34,7 @@ func ConfigureMiddleware(sessionStore *sessions.CookieStore, sessionName string,
 	}
 }
 
-func (am *AuthMiddleware) AuthenticateUser(roles []enums.UserRole) func(http.Handler) http.Handler {
+func (am *AuthMiddleware) Auth(roles []enums.UserRole) func(http.Handler) http.Handler {
 	organizationRepository := repository.NewOrganizationRepository(am.store)
 
 	return func(next http.Handler) http.Handler {
@@ -52,10 +52,10 @@ func (am *AuthMiddleware) AuthenticateUser(roles []enums.UserRole) func(http.Han
 				return
 			}
 
-			if !hasRole(roles, enums.Any) {
+			if !hasRole(roles, enums.UserRoleEnum.Any) {
 				orgId, err := strconv.Atoi(chi.URLParam(r, "orgId"))
 				if err != nil {
-					HTTPError(w, r, utils.NewException(http.StatusInternalServerError, utils.InternalServerError))
+					HTTPError(w, r, utils.NewException(http.StatusBadRequest, utils.BadRequest))
 					return
 				}
 
