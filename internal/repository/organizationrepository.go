@@ -198,12 +198,12 @@ func (or *OrganizationRepository) AddEmployees(userId int, orgId int, employees 
 		if err != nil {
 			tx.Rollback()
 
-			if err, ok := err.(*pq.Error); ok {
-				return exception.NewException(http.StatusBadRequest, err.Detail)
-			}
+			if _, ok := err.(*pq.Error); ok {
+				if strings.Contains(err.Error(), "employees_user_id_fkey") {
+					return exception.NewDetailsException(http.StatusBadRequest, exception.Enum.UserNotFound, map[string]interface{}{"id": employee.Id})
+				}
 
-			if strings.Contains(err.Error(), "employees_user_id_fkey") {
-				return exception.NewDetailsException(http.StatusBadRequest, exception.Enum.UserNotFound, map[string]interface{}{"id": employee.Id})
+				return exception.NewDetailsException(http.StatusBadRequest, exception.Enum.EmployeeAlreadyExist, map[string]interface{}{"id": employee.Id})
 			}
 
 			return err

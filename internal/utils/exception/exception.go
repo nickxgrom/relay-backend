@@ -9,6 +9,7 @@ type enumType struct {
 
 	OrganizationNotFound string
 	UserNotFound         string
+	EmployeeAlreadyExist string
 }
 
 var Enum = enumType{
@@ -19,6 +20,7 @@ var Enum = enumType{
 	Unauthorized:         "unauthorized",
 	OrganizationNotFound: "organization-not-found",
 	UserNotFound:         "user-not-found",
+	EmployeeAlreadyExist: "employee-already-exist",
 }
 
 type Exception struct {
