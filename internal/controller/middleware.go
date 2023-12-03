@@ -9,7 +9,7 @@ import (
 	"relay-backend/internal/repository"
 	"relay-backend/internal/service"
 	"relay-backend/internal/store"
-	"relay-backend/internal/utils"
+	"relay-backend/internal/utils/exception"
 	"strconv"
 )
 
@@ -41,21 +41,21 @@ func (am *AuthMiddleware) Auth(roles []enums.UserRole) func(http.Handler) http.H
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			s, err := am.sessionStore.Get(r, sessionName)
 			if err != nil {
-				HTTPError(w, r, utils.NewException(http.StatusInternalServerError, utils.InternalServerError))
+				HTTPError(w, r, exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError))
 				return
 			}
 
 			id, ok := s.Values["user_id"]
 
 			if !ok {
-				HTTPError(w, r, utils.NewException(http.StatusUnauthorized, utils.Unauthorized))
+				HTTPError(w, r, exception.NewException(http.StatusUnauthorized, exception.Enum.Unauthorized))
 				return
 			}
 
 			if !hasRole(roles, enums.UserRoleEnum.Any) {
 				orgId, err := strconv.Atoi(chi.URLParam(r, "orgId"))
 				if err != nil {
-					HTTPError(w, r, utils.NewException(http.StatusBadRequest, utils.BadRequest))
+					HTTPError(w, r, exception.NewException(http.StatusBadRequest, exception.Enum.BadRequest))
 					return
 				}
 
@@ -64,7 +64,7 @@ func (am *AuthMiddleware) Auth(roles []enums.UserRole) func(http.Handler) http.H
 				accessGranted := hasRole(roles, userRole)
 
 				if !accessGranted {
-					HTTPError(w, r, utils.NewException(http.StatusForbidden, utils.Forbidden))
+					HTTPError(w, r, exception.NewException(http.StatusForbidden, exception.Enum.Forbidden))
 					return
 				}
 			}

@@ -1,12 +1,14 @@
 package repository
 
 import (
-	"errors"
+	"fmt"
+	"github.com/lib/pq"
 	"net/http"
 	"relay-backend/internal/enums"
 	"relay-backend/internal/model"
 	"relay-backend/internal/store"
-	"relay-backend/internal/utils"
+	"relay-backend/internal/utils/exception"
+	"strings"
 )
 
 type OrganizationRepository struct {
@@ -149,16 +151,16 @@ func (or *OrganizationRepository) Update(userId int, orgId int, organization *mo
 func (or *OrganizationRepository) Delete(ownerId int, orgId int) error {
 	res, err := or.store.Db.Exec(`delete from organizations where owner_id = $1 and id = $2`, ownerId, orgId)
 	if err != nil {
-		return utils.NewException(http.StatusInternalServerError, utils.InternalServerError)
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
 	}
 
 	count, err := res.RowsAffected()
 	if err != nil {
-		return utils.NewException(http.StatusInternalServerError, utils.InternalServerError)
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
 	}
 
 	if count == 0 {
-		return utils.NewException(http.StatusNotFound, utils.NotFound)
+		return exception.NewException(http.StatusNotFound, exception.Enum.NotFound)
 	}
 
 	return nil
@@ -167,7 +169,7 @@ func (or *OrganizationRepository) Delete(ownerId int, orgId int) error {
 func (or *OrganizationRepository) AddEmployees(userId int, orgId int, employees []model.Employee) error {
 	_, err := or.Find(userId, orgId)
 	if err != nil {
-		return errors.New("organization-not-found")
+		return exception.NewDetailsException(http.StatusNotFound, exception.Enum.OrganizationNotFound, map[string]interface{}{"id": orgId})
 	}
 
 	tx, err := or.store.Db.Begin()
@@ -180,10 +182,30 @@ func (or *OrganizationRepository) AddEmployees(userId int, orgId int, employees 
 			continue
 		}
 
+		if employee.UserRole == enums.UserRoleEnum.OrganizationOwner {
+			tx.Rollback()
+			return exception.NewDetailsException(
+				http.StatusBadRequest,
+				exception.Enum.BadRequest,
+				map[string]interface{}{
+					"message": fmt.Sprintf("Can not set userRole OrganizationOwner for employees. Employee id: %d", employee.Id),
+				},
+			)
+		}
+
 		_, err := tx.Exec("insert into employees (organization_id, user_id, user_role) values ($1, $2, $3)", orgId, employee.Id, employee.UserRole)
 
 		if err != nil {
 			tx.Rollback()
+
+			if err, ok := err.(*pq.Error); ok {
+				return exception.NewException(http.StatusBadRequest, err.Detail)
+			}
+
+			if strings.Contains(err.Error(), "employees_user_id_fkey") {
+				return exception.NewDetailsException(http.StatusBadRequest, exception.Enum.UserNotFound, map[string]interface{}{"id": employee.Id})
+			}
+
 			return err
 		}
 	}
@@ -198,12 +220,12 @@ func (or *OrganizationRepository) AddEmployees(userId int, orgId int, employees 
 func (or *OrganizationRepository) DeleteAllEmployees(ownerId int, orgId int) error {
 	_, err := or.Find(ownerId, orgId)
 	if err != nil {
-		return utils.NewException(http.StatusNotFound, utils.NotFound)
+		return exception.NewException(http.StatusNotFound, exception.Enum.NotFound)
 	}
 
 	_, err = or.store.Db.Exec(`delete from employees where organization_id = $1`, orgId)
 	if err != nil {
-		return utils.NewException(http.StatusInternalServerError, utils.InternalServerError)
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
 	}
 
 	return nil
@@ -225,6 +247,7 @@ func (or *OrganizationRepository) GetUserRole(userId int, orgId int) enums.UserR
 	)
 
 	if err != nil {
+		//TODO: consider about error. now returns 403 if org not found
 		return enums.UserRoleEnum.None
 	}
 

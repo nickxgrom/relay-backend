@@ -65,7 +65,6 @@ func (os *OrganizationService) DeleteOrganization(ownerId int, orgId int) error 
 }
 
 func (os *OrganizationService) AddOrganizationEmployees(userId int, orgId int, employees []model.Employee) error {
-	// if userid has role 0||1 then
 	err := os.organizationRepository.AddEmployees(userId, orgId, employees)
 
 	if err != nil {

@@ -3,14 +3,13 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 	userRoleEnum "relay-backend/internal/enums"
 	"relay-backend/internal/model"
 	"relay-backend/internal/service"
 	"relay-backend/internal/store"
-	"relay-backend/internal/utils"
+	"relay-backend/internal/utils/exception"
 	"strconv"
 )
 
@@ -159,13 +158,13 @@ func (oc *OrganizationController) deleteOrganization(w http.ResponseWriter, r *h
 	userId := r.Context().Value(CtxKeyUser).(int)
 	orgId, err := strconv.Atoi(chi.URLParam(r, "orgId"))
 	if err != nil {
-		HTTPError(w, r, utils.NewException(http.StatusBadRequest, utils.BadRequest))
+		HTTPError(w, r, exception.NewException(http.StatusBadRequest, exception.Enum.BadRequest))
 		return
 	}
 
 	err = oc.organizationService.DeleteOrganization(userId, orgId)
 	if err != nil {
-		HTTPError(w, r, err)
+		HTTPError(w, r, err.(exception.Exception))
 		return
 	}
 
@@ -183,15 +182,13 @@ func (oc *OrganizationController) addEmployees(w http.ResponseWriter, r *http.Re
 	employees := &[]model.Employee{}
 
 	if err := json.NewDecoder(r.Body).Decode(&employees); err != nil {
-		HTTPError(w, r, utils.NewException(http.StatusInternalServerError, utils.InternalServerError))
+		HTTPError(w, r, exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError))
 		return
 	}
 
-	fmt.Println(employees)
-
 	err = oc.organizationService.AddOrganizationEmployees(userId, orgId, *employees)
 	if err != nil {
-		Error(w, r, http.StatusInternalServerError, err)
+		HTTPError(w, r, err.(exception.Exception))
 		return
 	}
 
