@@ -174,7 +174,7 @@ func (or *OrganizationRepository) AddEmployees(userId int, orgId int, employees 
 
 	tx, err := or.store.Db.Begin()
 	if err != nil {
-		return err
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
 	}
 
 	for _, employee := range employees {
@@ -211,7 +211,7 @@ func (or *OrganizationRepository) AddEmployees(userId int, orgId int, employees 
 	}
 
 	if err := tx.Commit(); err != nil {
-		return err
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
 	}
 
 	return nil
