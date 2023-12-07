@@ -15,7 +15,7 @@ type SessionService struct {
 func NewSessionService(s *store.Store) *SessionService {
 	return &SessionService{
 		sessionRepository: repository.NewSessionRepository(s),
-		userService:       NewUserService(s),
+		userService:       NewUserService(s, nil),
 	}
 }
 

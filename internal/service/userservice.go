@@ -1,6 +1,7 @@
 package service
 
 import (
+	"relay-backend/internal/apiserver/config"
 	"relay-backend/internal/model"
 	"relay-backend/internal/repository"
 	"relay-backend/internal/store"
@@ -8,11 +9,13 @@ import (
 
 type UserService struct {
 	userRepository *repository.UserRepository
+	config         *config.Config
 }
 
-func NewUserService(s *store.Store) *UserService {
+func NewUserService(s *store.Store, c *config.Config) *UserService {
 	return &UserService{
 		userRepository: repository.NewUserRepository(s),
+		config:         c,
 	}
 }
 

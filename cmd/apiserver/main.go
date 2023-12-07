@@ -5,6 +5,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"log"
 	"relay-backend/internal/apiserver"
+	"relay-backend/internal/apiserver/config"
 )
 
 var (
@@ -18,15 +19,15 @@ func init() {
 func main() {
 	flag.Parse()
 
-	config := apiserver.NewConfig()
+	cfg := config.NewConfig()
 
-	_, err := toml.DecodeFile(configPath, config)
+	_, err := toml.DecodeFile(configPath, cfg)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := apiserver.Start(config); err != nil {
+	if err := apiserver.Start(cfg); err != nil {
 		log.Fatal(err)
 	}
 }

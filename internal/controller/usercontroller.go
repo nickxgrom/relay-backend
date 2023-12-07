@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"net/http"
+	"relay-backend/internal/apiserver/config"
 	"relay-backend/internal/enums"
 	"relay-backend/internal/model"
 	"relay-backend/internal/service"
@@ -26,10 +27,10 @@ var (
 	uc *UserController
 )
 
-func NewUserController(store *store.Store, middleware *AuthMiddleware) func(r chi.Router) {
+func NewUserController(store *store.Store, middleware *AuthMiddleware, config *config.Config) func(r chi.Router) {
 	if uc == nil {
 		uc = &UserController{
-			userService: service.NewUserService(store),
+			userService: service.NewUserService(store, config),
 		}
 	}
 

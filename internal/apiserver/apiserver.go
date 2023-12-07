@@ -7,16 +7,17 @@ import (
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
+	"relay-backend/internal/apiserver/config"
 	"relay-backend/internal/store"
 )
 
-func Start(config *Config) error {
+func Start(config *config.Config) error {
 	db := newDB(config.DatabaseUrl)
 	defer db.Close()
 
 	dbStore := store.New(db)
 	sessionStore := sessions.NewCookieStore([]byte(config.SessionKey))
-	srv := newServer(dbStore, sessionStore)
+	srv := newServer(dbStore, sessionStore, config)
 
 	fmt.Printf("Server starting at port %s\n", config.BindAddress)
 	return http.ListenAndServe(config.BindAddress, srv.router)
