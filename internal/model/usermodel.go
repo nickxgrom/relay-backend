@@ -13,6 +13,7 @@ type User struct {
 	Email             string `json:"email"`
 	Password          string `json:"password,omitempty"`
 	EncryptedPassword string `json:"-"`
+	Verified          bool   `json:"verified"`
 }
 
 func (u *User) BeforeCreate() error {

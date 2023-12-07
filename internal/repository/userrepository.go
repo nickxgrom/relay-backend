@@ -24,13 +24,13 @@ func (ur *UserRepository) Save(u *model.User) error {
 	}
 
 	if err := ur.store.Db.QueryRow(
-		"insert into users (first_name, last_name, patronymic, email, encrypted_password) values ($1, $2, $3, $4, $5) returning id",
+		"insert into users (first_name, last_name, patronymic, email, encrypted_password) values ($1, $2, $3, $4, $5) returning id, verified",
 		&u.FirstName,
 		&u.LastName,
 		&u.Patronymic,
 		&u.Email,
 		&u.EncryptedPassword,
-	).Scan(&u.Id); err != nil {
+	).Scan(&u.Id, &u.Verified); err != nil {
 		return err
 	}
 
@@ -83,4 +83,8 @@ func (ur *UserRepository) Find(id int) (*model.User, error) {
 	}
 
 	return u, nil
+}
+
+func (ur *UserRepository) SaveToken(userId int, token string) {
+	ur.store.Db.QueryRow("insert into email_tokens (user_id, token) values ($1, $2)", userId, token)
 }
