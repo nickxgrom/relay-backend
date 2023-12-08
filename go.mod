@@ -11,5 +11,6 @@ require (
 
 require (
 	github.com/go-chi/chi/v5 v5.0.10 // indirect
+	github.com/google/uuid v1.4.0 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
 )

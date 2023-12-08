@@ -2,7 +2,7 @@ package service
 
 import (
 	"fmt"
-	"math/rand"
+	"github.com/google/uuid"
 	"net/http"
 	"net/smtp"
 	"regexp"
@@ -19,7 +19,6 @@ type UserService struct {
 }
 
 const (
-	chars      = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	emailRegex = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$"
 )
 
@@ -39,7 +38,7 @@ func (s *UserService) CreateUser(u *model.User) error {
 		return exception.NewException(http.StatusBadRequest, exception.Enum.InvalidEmail)
 	}
 
-	token := s.generateToken(64)
+	token := uuid.NewString()
 	msg := fmt.Sprintf("Subject: Relay email confirmation token\n\rRelay confirmation system introduces email confirmation token:\n\r%s", token)
 
 	s.userRepository.SaveToken(u.Id, token)
@@ -87,14 +86,4 @@ func (s *UserService) SendEmail(email string, message string) error {
 		[]string{email},
 		[]byte(message),
 	)
-}
-
-func (s *UserService) generateToken(n int) string {
-	str := make([]byte, n)
-
-	for i := range str {
-		str[i] = chars[rand.Intn(len(chars))]
-	}
-
-	return string(str)
 }
