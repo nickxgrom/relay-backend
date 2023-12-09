@@ -87,3 +87,19 @@ func (s *UserService) SendEmail(email string, message string) error {
 		[]byte(message),
 	)
 }
+
+func (s *UserService) ConfirmEmail(userId int, token string) error {
+	if err := s.userRepository.FindToken(userId, token); err != nil {
+		return err
+	}
+
+	if err := s.userRepository.SetVerified(userId, true); err != nil {
+		return err
+	}
+
+	if err := s.userRepository.DeleteToken(userId, token); err != nil {
+		return err
+	}
+
+	return nil
+}
