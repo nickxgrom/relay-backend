@@ -170,3 +170,12 @@ func (ur *UserRepository) DeleteToken(id int, token string) error {
 
 	return nil
 }
+
+func (ur *UserRepository) DeleteAllTokens(userId int) error {
+	_, err := ur.store.Db.Exec(`delete from email_tokens where user_id = $1`, userId)
+	if err != nil {
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
+	}
+
+	return nil
+}
