@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"github.com/lib/pq"
 	"net/http"
 	"relay-backend/internal/model"
 	"relay-backend/internal/store"
@@ -39,6 +40,51 @@ func (ur *UserRepository) Save(u *model.User) error {
 	return nil
 }
 
+func (ur *UserRepository) Update(userId int, user *model.User) error {
+	if user.Password != "" {
+		err := user.BeforeCreate()
+		if err != nil {
+			return err
+		}
+	}
+
+	err := ur.store.Db.QueryRow(`
+		update users
+		set first_name = coalesce(nullif($1, ''), first_name),
+		    last_name = coalesce(nullif($2, ''), last_name),
+		    patronymic = coalesce(nullif($3, ''), patronymic),
+		    email = coalesce(nullif($4, ''), email),
+		    encrypted_password = coalesce(nullif($5, ''), encrypted_password)
+		where id = $6 returning *
+	`,
+		&user.FirstName,
+		&user.LastName,
+		&user.Patronymic,
+		&user.Email,
+		&user.EncryptedPassword,
+		userId,
+	).Scan(
+		&user.Id,
+		&user.FirstName,
+		&user.LastName,
+		&user.Patronymic,
+		&user.Email,
+		&user.EncryptedPassword,
+		&user.Verified,
+	)
+
+	if err != nil {
+		if err, ok := err.(*pq.Error); ok {
+			if err.Code == "23505" {
+				return exception.NewException(http.StatusBadRequest, exception.Enum.EmailTaken)
+			}
+		}
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
+	}
+
+	return nil
+}
+
 func (ur *UserRepository) FindByEmail(email string) (*model.User, error) {
 	u := &model.User{}
 
@@ -67,7 +113,7 @@ func (ur *UserRepository) Find(id int) (*model.User, error) {
 	u := &model.User{}
 
 	if err := ur.store.Db.QueryRow(
-		"select id, first_name, last_name, patronymic, email, encrypted_password from users where id = $1",
+		"select id, first_name, last_name, patronymic, email, encrypted_password, verified from users where id = $1",
 		id,
 	).Scan(
 		&u.Id,
@@ -76,6 +122,7 @@ func (ur *UserRepository) Find(id int) (*model.User, error) {
 		&u.Patronymic,
 		&u.Email,
 		&u.EncryptedPassword,
+		&u.Verified,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.New("user-not-found")

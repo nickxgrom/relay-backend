@@ -38,6 +38,7 @@ func NewUserController(store *store.Store, middleware *AuthMiddleware, config *c
 	return func(r chi.Router) {
 		r.Post("/", uc.CreateUser)
 		r.With(middleware.Auth(enums.Access.Any)).Get("/", uc.GetUser)
+		r.With(middleware.Auth(enums.Access.Any)).Put("/", uc.UpdateUser)
 		r.With(middleware.Auth(enums.Access.Any)).Post("/confirm-email", uc.ConfirmEmail)
 	}
 }
@@ -77,6 +78,32 @@ func (uc *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Respond(w, r, http.StatusCreated, u)
+}
+
+func (uc *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	id := r.Context().Value(CtxKeyUser).(int)
+
+	ud := &userData{}
+	if err := json.NewDecoder(r.Body).Decode(ud); err != nil {
+		HTTPError(w, r, exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError))
+		return
+	}
+
+	user := model.User{
+		FirstName:  ud.FirstName,
+		LastName:   ud.LastName,
+		Patronymic: ud.Patronymic,
+		Email:      ud.Email,
+		Password:   ud.Password,
+	}
+
+	err := uc.userService.UpdateUser(id, &user)
+	if err != nil {
+		HTTPError(w, r, err.(exception.Exception))
+		return
+	}
+
+	Respond(w, r, http.StatusOK, user)
 }
 
 func (uc *UserController) ConfirmEmail(w http.ResponseWriter, r *http.Request) {

@@ -52,6 +52,31 @@ func (s *UserService) CreateUser(u *model.User) error {
 	return nil
 }
 
+func (s *UserService) UpdateUser(userId int, user *model.User) error {
+	if user.Email != "" {
+		ok, _ := regexp.Match(emailRegex, []byte(user.Email))
+		if !ok {
+			return exception.NewException(http.StatusBadRequest, exception.Enum.InvalidEmail)
+		}
+
+		err := s.userRepository.SetVerified(userId, false)
+		if err != nil {
+			return err
+		}
+
+		//TODO: invalidate all tokens
+		//TODO: new token for email
+		//TODO: notification for old email, that email was changed
+	}
+
+	if err := s.userRepository.Update(userId, user); err != nil {
+		return err
+	}
+
+	defer user.Sanitize()
+	return nil
+}
+
 func (s *UserService) FindByEmail(email string) (*model.User, error) {
 	u, err := s.userRepository.FindByEmail(email)
 	if err != nil {
