@@ -38,12 +38,8 @@ func (s *UserService) CreateUser(u *model.User) error {
 		return exception.NewException(http.StatusBadRequest, exception.Enum.InvalidEmail)
 	}
 
-	token := uuid.NewString()
-	msg := fmt.Sprintf("Subject: Relay email confirmation token\n\rRelay confirmation system introduces email confirmation token:\n\r%s", token)
-
-	s.userRepository.SaveToken(u.Id, token)
-
-	if err := s.SendEmail(u.Email, msg); err != nil {
+	token := s.generateToken(u.Id)
+	if err := s.SendEmail(u.Email, s.generateEmailTokenMessage(token)); err != nil {
 		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
 	}
 
@@ -70,7 +66,7 @@ func (s *UserService) UpdateUser(userId int, user *model.User) error {
 		return err
 	}
 
-	if user.Email != "" && newEmail != u.Email {
+	if newEmail != "" && newEmail != u.Email {
 		err := s.userRepository.SetVerified(userId, false)
 		if err != nil {
 			return err
@@ -80,7 +76,11 @@ func (s *UserService) UpdateUser(userId int, user *model.User) error {
 		if err := s.userRepository.DeleteAllTokens(userId); err != nil {
 			return err
 		}
-		//TODO: new token for email
+		token := s.generateToken(u.Id)
+		if err := s.SendEmail(user.Email, s.generateEmailTokenMessage(token)); err != nil {
+			return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
+		}
+
 		//TODO: notification for old email, that email was changed
 	}
 
@@ -138,4 +138,15 @@ func (s *UserService) ConfirmEmail(userId int, token string) error {
 	}
 
 	return nil
+}
+
+func (s *UserService) generateEmailTokenMessage(token string) string {
+	return fmt.Sprintf("Subject: Relay email confirmation token\n\rRelay confirmation system introduces email confirmation token:\n\r%s", token)
+}
+
+func (s *UserService) generateToken(id int) string {
+	token := uuid.NewString()
+	s.userRepository.SaveToken(id, token)
+
+	return token
 }
