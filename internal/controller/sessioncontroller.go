@@ -2,17 +2,18 @@ package controller
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
 	"net/http"
 	"relay-backend/internal/service"
 	"relay-backend/internal/store"
+	"relay-backend/internal/utils/exception"
 )
 
 var (
-	sessionName = "auth"
-	c           *SessionController
+	sessionName  = "auth"
+	c            *SessionController
+	cookieMaxAge = 60 * 60 * 24 // day
 )
 
 type SessionController struct {
@@ -39,28 +40,29 @@ func NewSessionController(s *store.Store, sessionStore *sessions.CookieStore) fu
 
 			//TODO: consider about moving this method to respond.go
 			if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-				Error(w, r, http.StatusBadRequest, err)
+				HTTPError(w, r, exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError))
 				return
 			}
 
 			u, err := c.sessionService.CheckUserExist(req.Email, req.Password)
 			if err != nil {
-				Error(w, r, http.StatusUnauthorized, errors.New("incorrect-email-or-password"))
+				HTTPError(w, r, exception.NewException(http.StatusUnauthorized, exception.Enum.IncorrectEmailOrPassword))
 				return
 			}
 
 			s, err := c.sessionStore.Get(r, sessionName)
 			if err != nil {
-				Error(w, r, http.StatusInternalServerError, err)
+				HTTPError(w, r, exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError))
 				return
 			} else {
 
 			}
 
 			s.Values["user_id"] = u.Id
+			s.Options.MaxAge = cookieMaxAge
 			err = c.sessionStore.Save(r, w, s)
 			if err != nil {
-				Error(w, r, http.StatusInternalServerError, err)
+				HTTPError(w, r, exception.NewException(http.StatusUnauthorized, exception.Enum.IncorrectEmailOrPassword))
 				return
 			}
 

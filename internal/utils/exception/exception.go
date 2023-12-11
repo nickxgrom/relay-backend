@@ -7,26 +7,28 @@ type enumType struct {
 	Forbidden           string
 	Unauthorized        string
 
-	OrganizationNotFound string
-	UserNotFound         string
-	EmployeeAlreadyExist string
-	InvalidEmail         string
-	EmailTaken           string
-	TokenNotFound        string
+	OrganizationNotFound     string
+	UserNotFound             string
+	EmployeeAlreadyExist     string
+	InvalidEmail             string
+	EmailTaken               string
+	TokenNotFound            string
+	IncorrectEmailOrPassword string
 }
 
 var Enum = enumType{
-	NotFound:             "not-found",
-	InternalServerError:  "internal-server-error",
-	BadRequest:           "bad-request",
-	Forbidden:            "resource-forbidden",
-	Unauthorized:         "unauthorized",
-	OrganizationNotFound: "organization-not-found",
-	UserNotFound:         "user-not-found",
-	EmployeeAlreadyExist: "employee-already-exist",
-	InvalidEmail:         "email-not-valid",
-	EmailTaken:           "email-already-taken",
-	TokenNotFound:        "token-not-found",
+	NotFound:                 "not-found",
+	InternalServerError:      "internal-server-error",
+	BadRequest:               "bad-request",
+	Forbidden:                "resource-forbidden",
+	Unauthorized:             "unauthorized",
+	OrganizationNotFound:     "organization-not-found",
+	UserNotFound:             "user-not-found",
+	EmployeeAlreadyExist:     "employee-already-exist",
+	InvalidEmail:             "email-not-valid",
+	EmailTaken:               "email-already-taken",
+	TokenNotFound:            "token-not-found",
+	IncorrectEmailOrPassword: "incorrect-email-or-password",
 }
 
 type Exception struct {
