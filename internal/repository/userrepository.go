@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"net/http"
 	"relay-backend/internal/model"
@@ -178,4 +179,21 @@ func (ur *UserRepository) DeleteAllTokens(userId int) error {
 	}
 
 	return nil
+}
+
+func (ur *UserRepository) CreateResetPasswordToken(email string) (string, error) {
+	token := uuid.NewString()
+
+	_, err := ur.store.Db.Exec(`
+		insert into reset_password_tokens (email, token, expiration_timestamp) 
+		values ($1, $2, current_timestamp + interval '1 day')
+	`,
+		email,
+		token,
+	)
+	if err != nil {
+		return "", exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
+	}
+
+	return token, nil
 }

@@ -150,3 +150,17 @@ func (s *UserService) generateToken(id int) string {
 
 	return token
 }
+
+func (s *UserService) ForgotPassword(email string) error {
+	token, err := s.userRepository.CreateResetPasswordToken(email)
+	if err != nil {
+		return err
+	}
+
+	err = s.SendEmail(email, fmt.Sprintf("Subject: Relay reset password token\n\rRelay reset password system introduces reset password token:\n\r%s", token))
+	if err != nil {
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
+	}
+
+	return nil
+}

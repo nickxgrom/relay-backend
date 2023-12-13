@@ -37,6 +37,7 @@ func NewUserController(store *store.Store, middleware *AuthMiddleware, config *c
 
 	return func(r chi.Router) {
 		r.Post("/", uc.CreateUser)
+		r.Post("/forgot-password", uc.forgotPassword)
 		r.With(middleware.Auth(enums.Access.Any)).Get("/", uc.GetUser)
 		r.With(middleware.Auth(enums.Access.Any)).Put("/", uc.UpdateUser)
 		r.With(middleware.Auth(enums.Access.Any)).Post("/confirm-email", uc.ConfirmEmail)
@@ -120,6 +121,27 @@ func (uc *UserController) ConfirmEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := uc.userService.ConfirmEmail(id, body.Token)
+	if err != nil {
+		HTTPError(w, r, err.(exception.Exception))
+		return
+	}
+
+	Respond(w, r, http.StatusOK, nil)
+}
+
+func (uc *UserController) forgotPassword(w http.ResponseWriter, r *http.Request) {
+	type data struct {
+		Email string `json:"email"`
+	}
+
+	body := &data{}
+
+	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
+		HTTPError(w, r, exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError))
+		return
+	}
+
+	err := uc.userService.ForgotPassword(body.Email)
 	if err != nil {
 		HTTPError(w, r, err.(exception.Exception))
 		return
