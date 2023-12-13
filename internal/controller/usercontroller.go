@@ -37,6 +37,7 @@ func NewUserController(store *store.Store, middleware *AuthMiddleware, config *c
 
 	return func(r chi.Router) {
 		r.Post("/", uc.CreateUser)
+		r.Post("/reset-password", uc.resetPassword)
 		r.Post("/forgot-password", uc.forgotPassword)
 		r.With(middleware.Auth(enums.Access.Any)).Get("/", uc.GetUser)
 		r.With(middleware.Auth(enums.Access.Any)).Put("/", uc.UpdateUser)
@@ -148,4 +149,24 @@ func (uc *UserController) forgotPassword(w http.ResponseWriter, r *http.Request)
 	}
 
 	Respond(w, r, http.StatusOK, nil)
+}
+
+func (uc *UserController) resetPassword(w http.ResponseWriter, r *http.Request) {
+	type data struct {
+		Email       string `json:"email"`
+		Token       string `json:"token"`
+		NewPassword string `json:"newPassword"`
+	}
+
+	body := &data{}
+
+	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
+		HTTPError(w, r, exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError))
+		return
+	}
+
+	if err := uc.userService.ResetPassword(body.Email, body.Token, body.NewPassword); err != nil {
+		HTTPError(w, r, err.(exception.Exception))
+		return
+	}
 }

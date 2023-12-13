@@ -164,3 +164,25 @@ func (s *UserService) ForgotPassword(email string) error {
 
 	return nil
 }
+
+func (s *UserService) ResetPassword(email string, token string, newPassword string) error {
+	if err := s.userRepository.FindResetPasswordToken(email, token); err != nil {
+		return err
+	}
+
+	user, err := s.userRepository.FindByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	err = s.userRepository.Update(user.Id, &model.User{Password: newPassword})
+	if err != nil {
+		return err
+	}
+
+	if err := s.userRepository.DeleteResetPasswordToken(token); err != nil {
+		return nil
+	}
+
+	return nil
+}

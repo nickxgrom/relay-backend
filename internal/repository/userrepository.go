@@ -9,6 +9,7 @@ import (
 	"relay-backend/internal/model"
 	"relay-backend/internal/store"
 	"relay-backend/internal/utils/exception"
+	"time"
 )
 
 type UserRepository struct {
@@ -101,7 +102,7 @@ func (ur *UserRepository) FindByEmail(email string) (*model.User, error) {
 		&u.EncryptedPassword,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.New("user-not-found")
+			return nil, exception.NewException(http.StatusNotFound, exception.Enum.UserNotFound)
 		}
 
 		return nil, err
@@ -129,7 +130,7 @@ func (ur *UserRepository) Find(id int) (*model.User, error) {
 			return nil, errors.New("user-not-found")
 		}
 
-		return nil, err
+		return nil, exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
 	}
 
 	return u, nil
@@ -158,6 +159,7 @@ func (ur *UserRepository) FindToken(userId int, token string) error {
 		if errors.Is(err, sql.ErrNoRows) {
 			return exception.NewException(http.StatusNotFound, exception.Enum.TokenNotFound)
 		}
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
 	}
 
 	return nil
@@ -186,7 +188,7 @@ func (ur *UserRepository) CreateResetPasswordToken(email string) (string, error)
 
 	_, err := ur.store.Db.Exec(`
 		insert into reset_password_tokens (email, token, expiration_timestamp) 
-		values ($1, $2, current_timestamp + interval '1 day')
+		values ($1, $2, current_timestamp + interval '1' hour)
 	`,
 		email,
 		token,
@@ -196,4 +198,34 @@ func (ur *UserRepository) CreateResetPasswordToken(email string) (string, error)
 	}
 
 	return token, nil
+}
+
+func (ur *UserRepository) FindResetPasswordToken(email string, token string) error {
+	expirationTimestamp := &time.Time{}
+
+	err := ur.store.Db.QueryRow(
+		"select expiration_timestamp from reset_password_tokens where email = $1 and token = $2",
+		email, token,
+	).Scan(&expirationTimestamp)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return exception.NewException(http.StatusNotFound, exception.Enum.TokenNotFound)
+		}
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
+	}
+
+	if !time.Now().UTC().Before(*expirationTimestamp) {
+		return exception.NewException(http.StatusBadRequest, exception.Enum.TokenExpired)
+	}
+
+	return nil
+}
+
+func (ur *UserRepository) DeleteResetPasswordToken(token string) error {
+	_, err := ur.store.Db.Exec("delete from reset_password_tokens where token = $1", token)
+	if err != nil {
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
+	}
+
+	return nil
 }

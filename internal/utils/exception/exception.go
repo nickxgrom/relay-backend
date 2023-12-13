@@ -13,6 +13,7 @@ type enumType struct {
 	InvalidEmail             string
 	EmailTaken               string
 	TokenNotFound            string
+	TokenExpired             string
 	IncorrectEmailOrPassword string
 }
 
@@ -28,6 +29,7 @@ var Enum = enumType{
 	InvalidEmail:             "email-not-valid",
 	EmailTaken:               "email-already-taken",
 	TokenNotFound:            "token-not-found",
+	TokenExpired:             "token-expired",
 	IncorrectEmailOrPassword: "incorrect-email-or-password",
 }
 
