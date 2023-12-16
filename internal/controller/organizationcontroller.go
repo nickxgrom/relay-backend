@@ -40,9 +40,10 @@ func NewOrganizationController(s *store.Store, middleware *AuthMiddleware) func(
 	return func(r chi.Router) {
 		r.With(auth(userRoleEnum.Access.Any)).Post("/", oc.CreateOrganization)
 		r.With(auth(userRoleEnum.Access.Any)).Get("/{page}/{pageSize}", oc.getOrganizationList)
-		r.With(auth(userRoleEnum.Access.OwnerAndAdmin)).Get("/{orgId}", oc.findOrganization)
+		r.With(auth(userRoleEnum.Access.Any)).Get("/{orgId}", oc.findOrganization)
 		r.With(auth(userRoleEnum.Access.Owner)).Put("/{orgId}", oc.updateOrganization)
 		r.With(auth(userRoleEnum.Access.Owner)).Delete("/{orgId}", oc.deleteOrganization)
+		r.With(auth(userRoleEnum.Access.Any)).Get("/{orgId}/employees", oc.getOrganizationEmployees)
 
 		r.With(auth(userRoleEnum.Access.OwnerAndAdmin)).Post("/{orgId}/employees", oc.addEmployees)
 	}
@@ -193,4 +194,21 @@ func (oc *OrganizationController) addEmployees(w http.ResponseWriter, r *http.Re
 	}
 
 	Respond(w, r, http.StatusOK, nil)
+}
+
+func (oc *OrganizationController) getOrganizationEmployees(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(CtxKeyUser).(int)
+	orgId, err := strconv.Atoi(chi.URLParam(r, "orgId"))
+	if err != nil {
+		HTTPError(w, r, exception.NewException(http.StatusBadRequest, exception.Enum.BadRequest))
+		return
+	}
+
+	employees, err := oc.organizationService.GetOrganizationEmployees(userId, orgId)
+	if err != nil {
+		HTTPError(w, r, err.(exception.Exception))
+		return
+	}
+
+	Respond(w, r, http.StatusOK, employees)
 }

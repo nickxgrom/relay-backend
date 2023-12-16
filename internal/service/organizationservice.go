@@ -73,3 +73,7 @@ func (os *OrganizationService) AddOrganizationEmployees(userId int, orgId int, e
 
 	return nil
 }
+
+func (os *OrganizationService) GetOrganizationEmployees(userId int, orgId int) (*[]model.User, error) {
+	return os.organizationRepository.GetEmployees(userId, orgId)
+}

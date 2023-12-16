@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/lib/pq"
 	"net/http"
@@ -39,7 +41,14 @@ func (or *OrganizationRepository) Save(organization *model.Organization) error {
 func (or *OrganizationRepository) Find(userId int, orgId int) (*model.Organization, error) {
 	org := &model.Organization{}
 
-	if err := or.store.Db.QueryRow("select * from organizations where id = $1 and owner_id = $2", orgId, userId).Scan(
+	err := or.store.Db.QueryRow(`
+		select o.* from organizations o
+		where (o.owner_id = $1 and o.id = $2) or 
+		exists(
+			select 1 from employees e
+		 	where o.id = e.organization_id and e.user_id = $3
+		)
+	`, userId, orgId, userId).Scan(
 		&org.Id,
 		&org.OwnerId,
 		&org.Name,
@@ -47,14 +56,26 @@ func (or *OrganizationRepository) Find(userId int, orgId int) (*model.Organizati
 		&org.Address,
 		&org.Email,
 		&org.CreationDate,
-	); err != nil {
-		return nil, err
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, exception.NewException(http.StatusNotFound, exception.Enum.OrganizationNotFound)
+		}
+		return nil, exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
 	}
 
 	rows, err := or.store.Db.Query(
 		"select id, first_name, last_name, patronymic, email from users join employees on users.id = employees.user_id where employees.organization_id = $1",
 		orgId,
 	)
+
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return nil, exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
+		}
+	}
+
 	employeesList := make([]model.User, 0)
 
 	for rows.Next() {
@@ -193,6 +214,10 @@ func (or *OrganizationRepository) AddEmployees(userId int, orgId int, employees 
 			)
 		}
 
+		if employee.UserRole == enums.UserRoleEnum.None {
+			employee.UserRole = enums.UserRoleEnum.Operator
+		}
+
 		_, err := tx.Exec("insert into employees (organization_id, user_id, user_role) values ($1, $2, $3)", orgId, employee.Id, employee.UserRole)
 
 		if err != nil {
@@ -234,11 +259,16 @@ func (or *OrganizationRepository) DeleteAllEmployees(ownerId int, orgId int) err
 func (or *OrganizationRepository) GetUserRole(userId int, orgId int) enums.UserRole {
 	var userRole int
 
-	if _, err := or.Find(userId, orgId); err == nil {
+	org, err := or.Find(userId, orgId)
+	if err != nil {
+		return enums.UserRoleEnum.None
+	}
+
+	if org.OwnerId == userId {
 		return enums.UserRoleEnum.OrganizationOwner
 	}
 
-	err := or.store.Db.QueryRow(
+	err = or.store.Db.QueryRow(
 		`select user_role from employees where user_id = $1 and organization_id = $2`,
 		userId,
 		orgId,
@@ -252,4 +282,13 @@ func (or *OrganizationRepository) GetUserRole(userId int, orgId int) enums.UserR
 	}
 
 	return enums.UserRole(userRole)
+}
+
+func (or *OrganizationRepository) GetEmployees(userId int, orgId int) (*[]model.User, error) {
+	org, err := or.Find(userId, orgId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &org.Employees, nil
 }
