@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"net/http"
 	"relay-backend/internal/enums"
@@ -24,7 +25,12 @@ func NewOrganizationRepository(s *store.Store) *OrganizationRepository {
 }
 
 func (or *OrganizationRepository) Save(organization *model.Organization) error {
-	if err := or.store.Db.QueryRow(
+	tx, txErr := or.store.Db.Begin()
+	if txErr != nil {
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
+	}
+
+	if err := tx.QueryRow(
 		"insert into organizations (owner_id, name, description, address, email, creation_date) values ((select id from users where id=$1), $2, $3, $4, $5, current_date) on conflict (owner_id, name) do nothing returning id, creation_date",
 		&organization.OwnerId,
 		&organization.Name,
@@ -32,8 +38,23 @@ func (or *OrganizationRepository) Save(organization *model.Organization) error {
 		&organization.Address,
 		&organization.Email,
 	).Scan(&organization.Id, &organization.CreationDate); err != nil {
-		return err
+		tx.Rollback()
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
 	}
+
+	widgetUuid := uuid.NewString()
+	_, err := tx.Exec(`insert into widgets (uuid, organization_id) values ($1, $2)`, widgetUuid, &organization.Id)
+	if err != nil {
+		tx.Rollback()
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
+	}
+
+	cmErr := tx.Commit()
+	if cmErr != nil {
+		return exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
+	}
+
+	organization.Widget = widgetUuid
 
 	return nil
 }
@@ -273,7 +294,7 @@ func (or *OrganizationRepository) GetUserRole(userId int, orgId int) enums.UserR
 		userId,
 		orgId,
 	).Scan(
-		userRole,
+		&userRole,
 	)
 
 	if err != nil {
@@ -291,4 +312,19 @@ func (or *OrganizationRepository) GetEmployees(userId int, orgId int) (*[]model.
 	}
 
 	return &org.Employees, nil
+}
+
+func (or *OrganizationRepository) GetOrgIdByWidgetUuid(uuid string) (int, error) {
+	orgId := 0
+
+	err := or.store.Db.QueryRow(`select organization_id from widgets where uuid = $1`, uuid).Scan(orgId)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, exception.NewException(http.StatusNotFound, exception.Enum.OrganizationNotFound)
+		}
+		return 0, exception.NewException(http.StatusInternalServerError, exception.Enum.InternalServerError)
+	}
+
+	return orgId, nil
 }

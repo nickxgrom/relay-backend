@@ -7,6 +7,7 @@ type Organization struct {
 	Description  string `json:"description"`
 	Address      string `json:"address"`
 	Email        string `json:"email"`
+	Widget       string `json:"widget"`
 	CreationDate string `json:"creationDate"`
 	Employees    []User `json:"employees,omitempty"`
 }

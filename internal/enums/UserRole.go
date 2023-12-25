@@ -21,11 +21,13 @@ var UserRoleEnum = userRoleStruct{
 type accessStruct struct {
 	Owner         []UserRole
 	OwnerAndAdmin []UserRole
+	Operator      []UserRole
 	Any           []UserRole
 }
 
 var Access = accessStruct{
 	Owner:         []UserRole{UserRoleEnum.OrganizationOwner},
 	OwnerAndAdmin: []UserRole{UserRoleEnum.OrganizationOwner, UserRoleEnum.OrganizationAdmin},
+	Operator:      []UserRole{UserRoleEnum.Operator},
 	Any:           []UserRole{UserRoleEnum.Any},
 }
