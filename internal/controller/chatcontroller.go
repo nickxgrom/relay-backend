@@ -7,14 +7,16 @@ import (
 	"github.com/gorilla/websocket"
 	"net/http"
 	userRoleEnum "relay-backend/internal/enums"
+	"relay-backend/internal/enums/sender"
 	"relay-backend/internal/service"
 	"relay-backend/internal/store"
 	"relay-backend/internal/utils/exception"
 )
 
 type ChatController struct {
-	chatService *service.ChatService
-	middleware  *AuthMiddleware
+	chatService    *service.ChatService
+	messageService *service.MessageService
+	middleware     *AuthMiddleware
 }
 
 var (
@@ -28,10 +30,17 @@ type message struct {
 	Text   string `json:"text"`
 }
 
+var senderMap = map[string]sender.Type{
+	"system":   sender.System,
+	"operator": sender.Operator,
+	"client":   sender.Client,
+}
+
 func NewChatController(s *store.Store, authMiddleware *AuthMiddleware) func(r chi.Router) {
 	cc := &ChatController{
-		chatService: service.NewChatService(s),
-		middleware:  authMiddleware,
+		chatService:    service.NewChatService(s),
+		messageService: service.NewMessageService(s),
+		middleware:     authMiddleware,
 	}
 
 	return func(r chi.Router) {
@@ -58,7 +67,9 @@ func (cc *ChatController) createChat(w http.ResponseWriter, r *http.Request) {
 
 func (cc *ChatController) wsHandler(w http.ResponseWriter, r *http.Request) {
 	chatId := r.URL.Query().Get("chatId")
-	sender := r.URL.Query().Get("sender")
+	sndr := r.URL.Query().Get("sender")
+
+	from := senderMap[sndr]
 
 	upgrader := websocket.Upgrader{}
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -75,22 +86,21 @@ func (cc *ChatController) wsHandler(w http.ResponseWriter, r *http.Request) {
 
 	//TODO: consider about endpoint with auth for operators and THEN add them to map
 	//consider (need to AUTHORIZE operator) TODO: authorize client (by widget uuid and cookie) or operator (by user.id and organization.id) and send all previous messages
-	if sender == "client" {
+	if from == sender.Operator {
 		if _, ok := clientMap[chatId]; !ok {
 			clientMap[chatId] = conn
 		}
-	} else if sender == "operator" {
+	} else if from == sender.Client {
 		if _, ok := operatorMap[chatId]; !ok {
 			operatorMap[chatId] = conn
 		}
 	}
 
 	for {
-		//TODO: save msg to db
+		var msg message
 
 		//TODO: if there is no receiver then do nothing (now is err and ws disconnecting)
 		//TODO: check if operator online, if not then response about waiting
-		var msg message
 
 		messageType, m, err := conn.ReadMessage()
 		if err != nil {
@@ -103,16 +113,23 @@ func (cc *ChatController) wsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if msg.Sender == "operator" {
+		msgSender := senderMap[msg.Sender]
+		if msgSender == sender.Operator {
 			err := clientMap[chatId].WriteMessage(messageType, []byte(msg.Text))
 			if err != nil {
 				return
 			}
-		} else if msg.Sender == "client" {
+		} else if msgSender == sender.Client {
 			err := operatorMap[chatId].WriteMessage(messageType, []byte(msg.Text))
 			if err != nil {
 				return
 			}
+		}
+
+		//TODO: save msg to db
+		err = cc.messageService.SaveMessage(msgSender, msg.Text, 0, chatId)
+		if err != nil {
+			conn.WriteMessage(websocket.TextMessage, []byte(err.Error()))
 		}
 	}
 }

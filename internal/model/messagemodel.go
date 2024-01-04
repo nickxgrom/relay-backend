@@ -1,10 +1,15 @@
 package model
 
-import "time"
+import (
+	"relay-backend/internal/enums/sender"
+	"time"
+)
 
 type Message struct {
-	Id        int
-	From      string //enum "Operator", "Client", "System" ???
-	Text      string
-	Timestamp time.Time
+	Id        int         `json:"id"`
+	ChatUuid  string      `json:"chatUuid"`
+	Sender    sender.Type `json:"sender"`
+	SenderId  int         `json:"senderId,omitempty"`
+	Text      string      `json:"text"`
+	Timestamp time.Time   `json:"timestamp"`
 }
