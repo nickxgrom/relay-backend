@@ -86,11 +86,12 @@ func (cc *ChatController) wsHandler(w http.ResponseWriter, r *http.Request) {
 
 	//TODO: consider about endpoint with auth for operators and THEN add them to map
 	//consider (need to AUTHORIZE operator) TODO: authorize client (by widget uuid and cookie) or operator (by user.id and organization.id) and send all previous messages
-	if from == sender.Operator {
+	//TODO: need to check chat existing
+	if from == sender.Client {
 		if _, ok := clientMap[chatId]; !ok {
 			clientMap[chatId] = conn
 		}
-	} else if from == sender.Client {
+	} else if from == sender.Operator {
 		if _, ok := operatorMap[chatId]; !ok {
 			operatorMap[chatId] = conn
 		}
@@ -115,18 +116,21 @@ func (cc *ChatController) wsHandler(w http.ResponseWriter, r *http.Request) {
 
 		msgSender := senderMap[msg.Sender]
 		if msgSender == sender.Operator {
-			err := clientMap[chatId].WriteMessage(messageType, []byte(msg.Text))
-			if err != nil {
-				return
+			if client, ok := clientMap[chatId]; ok {
+				err := client.WriteMessage(messageType, []byte(msg.Text))
+				if err != nil {
+					return
+				}
 			}
 		} else if msgSender == sender.Client {
-			err := operatorMap[chatId].WriteMessage(messageType, []byte(msg.Text))
-			if err != nil {
-				return
+			if operator, ok := operatorMap[chatId]; ok {
+				err := operator.WriteMessage(messageType, []byte(msg.Text))
+				if err != nil {
+					return
+				}
 			}
 		}
 
-		//TODO: save msg to db
 		err = cc.messageService.SaveMessage(msgSender, msg.Text, 0, chatId)
 		if err != nil {
 			conn.WriteMessage(websocket.TextMessage, []byte(err.Error()))

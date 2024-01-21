@@ -1,9 +1,9 @@
 package sender
 
-type Type byte
+type Type string
 
 const (
-	System   Type = iota
-	Operator Type = iota
-	Client   Type = iota
+	System   Type = "system"
+	Operator Type = "operator"
+	Client   Type = "client"
 )
